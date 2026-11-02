@@ -30,6 +30,7 @@ describe('setupInteractions', () => {
       },
       stdin: {
         setRawMode: jest.fn(),
+        resume: jest.fn(),
         on: jest.fn(),
       },
       stdout: {
@@ -82,6 +83,27 @@ describe('setupInteractions', () => {
     expect(mockProcess.stdin.on).toHaveBeenCalledWith(
       'keypress',
       expect.any(Function)
+    );
+  });
+
+  // A prompt library can leave stdin paused before the dev server starts, because Node's
+  // Readable.unpipe() pauses its source. Raw mode then delivers Ctrl+C only as stream data,
+  // so a paused stream means no keypresses and no way to interrupt the server.
+  it('should resume stdin after entering raw mode', () => {
+    setupInteractions(
+      {},
+      {
+        logger: mockLogger,
+        process: mockProcess,
+        readline: mockReadline,
+      }
+    );
+
+    expect(mockProcess.stdin.resume).toHaveBeenCalled();
+    expect(
+      (mockProcess.stdin.resume as jest.Mock).mock.invocationCallOrder[0]
+    ).toBeGreaterThan(
+      (mockProcess.stdin.setRawMode as jest.Mock).mock.invocationCallOrder[0]
     );
   });
 

@@ -40,6 +40,10 @@ export function setupInteractions(
 
   readline.emitKeypressEvents(process.stdin);
   process.stdin.setRawMode(true);
+  // Raw mode clears ISIG, so Ctrl+C arrives only as stream data. A stdin paused earlier
+  // in the process delivers nothing: Node's Readable.unpipe() pauses its source, which is
+  // how CLI prompt libraries close a prompt. `@rock-js/plugin-metro` resumes in this spot.
+  process.stdin.resume();
 
   // graceful shutdown
   process.on('SIGINT', () => {
